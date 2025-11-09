@@ -44,6 +44,40 @@ final class MRZParserTests: XCTestCase {
         XCTAssertEqual(MRZParser.parse(mrzString: mrzString, isOCRCorrectionEnabled: false), result)
     }
 
+    /// Test with unspecified gender and wrong document number check digit (O instead of 0)
+    func testTD1_UnspecifiedGender() throws {
+        let mrzString = """
+                        IDD<<ABCDEFGHEO<<<<<<<<<<<<<<<
+                        0907095<2707059D<<<<<<<<<<<<<O
+                        LAMETTI<<JULIA<<<<<<<<<<<<<<<<
+                        """
+        let testCases = [
+            (isOCRCorrectionEnabled: true, mrzKey: "ABCDEFGHE009070952707059"),
+            (isOCRCorrectionEnabled: false, mrzKey: "ABCDEFGHE09070952707059")
+        ]
+
+        for testCase in testCases {
+            let result = MRZResult(
+                mrzKey: testCase.mrzKey,
+                format: .td1,
+                documentType: .id,
+                documentTypeAdditional: "D",
+                countryCode: "D",
+                surnames: "LAMETTI",
+                givenNames: "JULIA",
+                documentNumber: "ABCDEFGHE",
+                nationalityCountryCode: "D",
+                birthdate: try XCTUnwrap(dateFormatter.date(from: "090709")),
+                sex: .unspecified,
+                expiryDate: try XCTUnwrap(dateFormatter.date(from: "270705")),
+                optionalData: nil,
+                optionalData2: nil
+            )
+
+            XCTAssertEqual(MRZParser.parse(mrzString: mrzString, isOCRCorrectionEnabled: testCase.isOCRCorrectionEnabled), result)
+        }
+    }
+
     func testTD2() throws {
         let mrzString = """
                         IRUTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<

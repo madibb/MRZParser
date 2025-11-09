@@ -210,7 +210,6 @@ struct MRZCode {
                     length: 6,
                     fieldType: .birthdate
                 ),
-                let sexField = fieldFactory.createStringField(from: secondLine, at: 7, length: 1, ocrCorrectionType: .sex),
                 let expiryDateField = fieldFactory.createDateValidatedField(
                     from: secondLine,
                     at: 8,
@@ -221,6 +220,9 @@ struct MRZCode {
                 let namesField = fieldFactory.createNamesField(from: thirdLine, at: 0, length: 29) else {
                 return nil
             }
+
+            let sexField = fieldFactory.createStringField(from: secondLine, at: 7, length: 1, ocrCorrectionType: .sex) ??
+            MRZResult.Sex.unspecified.identifier[0] // "X"
 
             self.documentNumberField = documentNumberField
             self.birthdateField = birthdateField
@@ -251,13 +253,16 @@ struct MRZCode {
                     length: 6,
                     fieldType: .birthdate
                   ),
-                  let sexField = fieldFactory.createStringField(from: secondLine, at: 20, length: 1, ocrCorrectionType: .sex),
                   let expiryDateField = fieldFactory.createDateValidatedField(
                       from: secondLine, at: 21, length: 6, fieldType: .expiryDate
                   ),
                   let nationalityField = fieldFactory.createStringField(from: secondLine, at: 10, length: 3, ocrCorrectionType: .letters) else {
                 return nil
             }
+
+            let sexField = fieldFactory.createStringField(from: secondLine, at: 20, length: 1, ocrCorrectionType: .sex) ??
+            MRZResult.Sex.unspecified.identifier[0] // "X"
+
             self.documentNumberField = documentNumberField
             self.birthdateField = birthdateField
             self.sexField = sexField
