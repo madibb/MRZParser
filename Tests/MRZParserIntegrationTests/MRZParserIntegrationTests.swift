@@ -78,6 +78,47 @@ final class MRZParserTests: XCTestCase {
         }
     }
 
+    func testTD1_InvalidCheckDigits() throws {
+        let mrzString = """
+                        IDESPAAA0000003000000511<<<<<<
+                        5101016M1606011ESP<<<<<<<<<<<2
+                        ESPANOL<ESPANOL<<JUAN<<<<<<<<<
+                        """
+        let result = MRZResult(
+            mrzKey: "AAA000000351010161606011",
+            format: .td1,
+            documentType: .id,
+            documentTypeAdditional: "D",
+            countryCode: "ESP",
+            surnames: "ESPANOL ESPANOL",
+            givenNames: "JUAN",
+            documentNumber: "AAA000000",
+            nationalityCountryCode: "ESP",
+            birthdate: try XCTUnwrap(dateFormatter.date(from: "510101")),
+            sex: .male,
+            expiryDate: try XCTUnwrap(dateFormatter.date(from: "160601")),
+            optionalData: "000000511",
+            optionalData2: nil
+        )
+
+        XCTAssertEqual(
+            MRZParser.parse(
+                mrzString: mrzString,
+                isOCRCorrectionEnabled: true,
+                validateCheckDigits: false
+            ),
+            result
+        )
+        XCTAssertEqual(
+            MRZParser.parse(
+                mrzString: mrzString,
+                isOCRCorrectionEnabled: false,
+                validateCheckDigits: false
+            ),
+            result
+        )
+    }
+
     func testTD2() throws {
         let mrzString = """
                         IRUTOERIKSSON<<ANNA<MARIA<<<<<<<<<<<

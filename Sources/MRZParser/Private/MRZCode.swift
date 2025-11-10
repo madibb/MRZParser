@@ -20,6 +20,7 @@ struct MRZCode {
     var optionalData2Field: ValidatedField<String>?
     let namesField: NamesField
     let finalCheckDigit: Int?
+    let validateCheckDigits: Bool
 
     private let fieldFactory: MRZFieldFactory
 
@@ -73,7 +74,7 @@ struct MRZCode {
         }()
 
         let compositedValue = validatedFields.reduce("", { $0 + $1.rawValue + ($1.checkDigit.map { String($0) } ?? "") })
-        return Self.isValueValid(compositedValue, checkDigit: finalCheckDigit)
+        return Self.isValueValid(compositedValue, checkDigit: finalCheckDigit, validateCheckDigits: validateCheckDigits)
     }
 
     mutating func bruteForceCorrectOptionalDataIfNeeded() -> Bool {
@@ -87,7 +88,8 @@ struct MRZCode {
                     fields.append(.init(
                         value: firstValue,
                         rawValue: firstString,
-                        checkDigit: optionalDataField?.checkDigit
+                        checkDigit: optionalDataField?.checkDigit,
+                        validateCheckDigits: validateCheckDigits
                     ))
 
                     if combination.count > 1 {
@@ -96,13 +98,17 @@ struct MRZCode {
                             fields.append(.init(
                                 value: secondValue,
                                 rawValue: secondString,
-                                checkDigit: optionalData2Field?.checkDigit
+                                checkDigit: optionalData2Field?.checkDigit,
+                                validateCheckDigits: validateCheckDigits
                             ))
                         }
                     }
                 }
 
-                return isCompositionValid(optionalValidatedFields: fields)
+                var tempMRZCode = self
+                tempMRZCode.optionalDataField = fields.first
+                tempMRZCode.optionalData2Field = fields.count > 1 ? fields[1] : nil
+                return tempMRZCode.isCompositionValid(optionalValidatedFields: fields)
             }
         )
 
@@ -112,7 +118,8 @@ struct MRZCode {
             optionalDataField = .init(
                 value: firstValue,
                 rawValue: firstMatchingString,
-                checkDigit: optionalDataField?.checkDigit
+                checkDigit: optionalDataField?.checkDigit,
+                validateCheckDigits: validateCheckDigits
             )
 
             if matchingStrings.count > 1 {
@@ -121,7 +128,8 @@ struct MRZCode {
                     optionalData2Field = .init(
                         value: secondValue,
                         rawValue: secondMatchingString,
-                        checkDigit: optionalData2Field?.checkDigit
+                        checkDigit: optionalData2Field?.checkDigit,
+                        validateCheckDigits: validateCheckDigits
                     )
                 }
             }
@@ -185,10 +193,12 @@ struct MRZCode {
     init?(
         from mrzLines: [String],
         format: MRZFormat,
-        isOCRCorrectionEnabled: Bool
+        isOCRCorrectionEnabled: Bool,
+        validateCheckDigits: Bool = true
     ) {
         let (firstLine, secondLine) = (mrzLines[0], mrzLines[1])
-        let fieldFactory = MRZFieldFactory(isOCRCorrectionEnabled: isOCRCorrectionEnabled)
+        let fieldFactory = MRZFieldFactory(isOCRCorrectionEnabled: isOCRCorrectionEnabled, validateCheckDigits: validateCheckDigits)
+        self.validateCheckDigits = validateCheckDigits
 
         guard let documentTypeField = fieldFactory.createStringField(from: firstLine, at: 0, length: 2, ocrCorrectionType: .letters),
               let countryCodeField = fieldFactory.createStringField(from: firstLine, at: 2, length: 3, ocrCorrectionType: .letters) else {
@@ -233,13 +243,15 @@ struct MRZCode {
                 from: firstLine,
                 at: 15,
                 length: 15,
-                checkDigitFollows: false
+                checkDigitFollows: false,
+                validateCheckDigits: validateCheckDigits
             )
             optionalData2Field = fieldFactory.createStringValidatedField(
                 from: secondLine,
                 at: 18,
                 length: 11,
-                checkDigitFollows: false
+                checkDigitFollows: false,
+                validateCheckDigits: validateCheckDigits
             )
             finalCheckDigit = fieldFactory.createIntField(from: secondLine, at: 29, length: 1)
             self.namesField = namesField
@@ -277,7 +289,8 @@ struct MRZCode {
                     from: secondLine,
                     at: 28,
                     length: isVisaDocument ? 8 : 7,
-                    checkDigitFollows: false
+                    checkDigitFollows: false,
+                    validateCheckDigits: validateCheckDigits
                 )
                 optionalData2Field = nil
                 self.namesField = namesField
@@ -293,11 +306,12 @@ struct MRZCode {
                         from: secondLine,
                         at: 28,
                         length: 16,
-                        checkDigitFollows: false
+                        checkDigitFollows: false,
+                        validateCheckDigits: validateCheckDigits
                     )
                 } else {
                     fieldFactory.createStringValidatedField(
-                        from: secondLine, at: 28, length: 14
+                        from: secondLine, at: 28, length: 14, validateCheckDigits: validateCheckDigits
                     )
                 }
                 optionalData2Field = nil
@@ -316,7 +330,8 @@ struct MRZCode {
         self.fieldFactory = fieldFactory
     }
 
-    static func isValueValid(_ rawValue: String, checkDigit: Int?) -> Bool {
+    static func isValueValid(_ rawValue: String, checkDigit: Int?, validateCheckDigits: Bool = true) -> Bool {
+        guard validateCheckDigits else { return true }
         guard let checkDigit else { return true }
 
         return getCheckDigit(for: rawValue) == checkDigit

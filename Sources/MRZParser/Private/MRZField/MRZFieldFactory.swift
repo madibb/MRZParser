@@ -9,6 +9,7 @@ import Foundation
 
 struct MRZFieldFactory {
     private let isOCRCorrectionEnabled: Bool
+    private let validateCheckDigits: Bool
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyyMMdd"
@@ -17,8 +18,9 @@ struct MRZFieldFactory {
         return formatter
     }()
 
-    init(isOCRCorrectionEnabled: Bool) {
+    init(isOCRCorrectionEnabled: Bool, validateCheckDigits: Bool = true) {
         self.isOCRCorrectionEnabled = isOCRCorrectionEnabled
+        self.validateCheckDigits = validateCheckDigits
     }
 
     // MARK: Basic Fields
@@ -87,14 +89,15 @@ struct MRZFieldFactory {
         guard let dateValue = date(from: rawValue, fieldType: fieldType) else {
             return nil
         }
-        return .init(value: dateValue, rawValue: rawValue, checkDigit: checkDigit)
+        return .init(value: dateValue, rawValue: rawValue, checkDigit: checkDigit, validateCheckDigits: validateCheckDigits)
     }
 
     func createStringValidatedField(
         from string: String,
         at startIndex: Int,
         length: Int,
-        checkDigitFollows: Bool = true
+        checkDigitFollows: Bool = true,
+        validateCheckDigits: Bool? = nil
     ) -> ValidatedField<String>? {
         let checkDigit = checkDigitFollows ? getCheckDigit(
             from: string,
@@ -110,7 +113,7 @@ struct MRZFieldFactory {
             return nil
         }
 
-        return .init(value: value, rawValue: rawValue, checkDigit: checkDigit)
+        return .init(value: value, rawValue: rawValue, checkDigit: checkDigit, validateCheckDigits: validateCheckDigits ?? self.validateCheckDigits)
     }
 
     private func getRawValue(

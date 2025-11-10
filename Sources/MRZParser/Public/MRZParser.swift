@@ -8,13 +8,18 @@
 import Foundation
 
 public struct MRZParser {
-    public static func parse(mrzLines: [String], isOCRCorrectionEnabled: Bool) -> MRZResult? {
+    public static func parse(
+        mrzLines: [String],
+        isOCRCorrectionEnabled: Bool,
+        validateCheckDigits: Bool = true
+    ) -> MRZResult? {
         guard let format = createMRZFormat(from: mrzLines) else { return nil }
 
         guard var mrzCode = MRZCode(
             from: mrzLines,
             format: format,
-            isOCRCorrectionEnabled: isOCRCorrectionEnabled
+            isOCRCorrectionEnabled: isOCRCorrectionEnabled,
+            validateCheckDigits: validateCheckDigits
         ), mrzCode.allFieldsAreValid else {
             return nil
         }
@@ -61,8 +66,18 @@ public struct MRZParser {
         )
     }
 
-    public static func parse(mrzString: String, isOCRCorrectionEnabled: Bool) -> MRZResult? {
-        return parse(mrzLines: mrzString.components(separatedBy: "\n"), isOCRCorrectionEnabled: isOCRCorrectionEnabled)
+    public static func parse(
+        mrzString: String,
+        isOCRCorrectionEnabled: Bool,
+        validateCheckDigits: Bool = true
+    ) -> MRZResult? {
+        return parse(
+            mrzLines: mrzString.components(
+                separatedBy: "\n"
+            ),
+            isOCRCorrectionEnabled: isOCRCorrectionEnabled,
+            validateCheckDigits: validateCheckDigits
+        )
     }
 
     // MARK: MRZ-Format detection

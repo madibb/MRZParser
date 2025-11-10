@@ -23,8 +23,16 @@ struct ValidatedField<T>: ValidatedFieldProtocol {
     let value: T
     let rawValue: String
     let checkDigit: Int?
+    let validateCheckDigits: Bool
+
+    init(value: T, rawValue: String, checkDigit: Int?, validateCheckDigits: Bool = true) {
+        self.value = value
+        self.rawValue = rawValue
+        self.checkDigit = checkDigit
+        self.validateCheckDigits = validateCheckDigits
+    }
 
     var isValid: Bool {
-        return MRZCode.isValueValid(rawValue, checkDigit: checkDigit)
+        return MRZCode.isValueValid(rawValue, checkDigit: checkDigit, validateCheckDigits: validateCheckDigits)
     }
 }
